@@ -18,7 +18,10 @@ print("Missing values:\n", df.isnull().sum())
 df_clean = df.copy()
 
 #Converting published_at to datetime
-df_clean['published_at'] = pd.to_datetime(df_clean['published_at'], errors='coerce', utc=True)
+df_clean['published_at'] = pd.to_datetime(df_clean['published_at'], errors='coerce')
+dropna_count = df_clean['published_at'].isnull().sum()
+print(f"Missing published_at after conversion: {dropna_count}")
+df_clean = df_clean.dropna(subset=['published_at'])
 
 #Creating channel age (in years)
 reference_date = pd.Timestamp('2026-01-01', tz='UTC')
@@ -58,13 +61,20 @@ sns.heatmap(corr, annot=True)
 plt.title("Correlation Heatmap")
 plt.show()
 
+#Outlier Detection
+#HISTOGRAM
+plt.figure()
+sns.histplot(df['subscribers'], bins=50, kde=True)
+plt.title("Subscriber Distribution")
+plt.xlabel("Subscribers")
+plt.show()
+
 #BOXPLOT
 plt.figure()
 plt.boxplot(df_clean['subscribers'], vert=False)
 plt.title("Outliers in Subscribers")
 plt.xlabel("Subscribers")
 plt.show()
-
 
 #IQR METHOD (Data not normal)
 subs_arr = np.array(df_clean['subscribers'])
@@ -80,3 +90,16 @@ outliers = subs_arr[(subs_arr < lower) | (subs_arr > upper)]
 print("Outliers count (IQR):", len(outliers))
 
 
+#Question-1 
+#How has YouTube channel creation evolved over the years among the top 1000 channels?
+df_clean['year'] = df_clean['published_at'].dt.year
+df_clean = df_clean[df_clean['year'] >= 2005]
+yearly_counts = df_clean['year'].value_counts().sort_index()    
+plt.figure()
+sns.lineplot(x=yearly_counts.index, y=yearly_counts.values)
+plt.title("YouTube Top Channel Creation Over the Years")
+plt.xlabel("Year")
+plt.ylabel("Number of Channels Created")
+plt.show()
+
+#Question-2
