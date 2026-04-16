@@ -18,7 +18,7 @@ print("Missing values:\n", df.isnull().sum())
 df_clean = df.copy()
 
 #Converting published_at to datetime
-df_clean['published_at'] = pd.to_datetime(df_clean['published_at'], errors='coerce')
+df_clean['published_at'] = pd.to_datetime(df_clean['published_at'], errors='coerce',utc=True)
 dropna_count = df_clean['published_at'].isnull().sum()
 print(f"Missing published_at after conversion: {dropna_count}")
 df_clean = df_clean.dropna(subset=['published_at'])
@@ -56,6 +56,7 @@ numeric_cols = ['subscribers', 'views', 'videos', 'channel_age_years']
 corr = df_clean[numeric_cols].corr()
 print("\nCorrelation Matrix:")
 print(corr)
+#HeatMap
 plt.figure()
 sns.heatmap(corr, annot=True)
 plt.title("Correlation Heatmap")
@@ -63,17 +64,32 @@ plt.show()
 
 #Outlier Detection
 #HISTOGRAM
-plt.figure()
-sns.histplot(df['subscribers'], bins=50, kde=True)
+'''plt.figure()
+sns.histplot(df_clean['subscribers'], bins=50, kde=True)
 plt.title("Subscriber Distribution")
 plt.xlabel("Subscribers")
+plt.show()'''
+
+subs_crores = df_clean['subscribers'] / 1e7
+
+plt.figure(figsize=(10, 5))
+sns.histplot(subs_crores, bins=50, kde=True, color='skyblue')
+plt.title("Subscriber Distribution (in Crores)")
+plt.xlabel("Subscribers (Crores)")
+plt.ylabel("Frequency")
 plt.show()
 
-#BOXPLOT
+'''#BOXPLOT
 plt.figure()
 plt.boxplot(df_clean['subscribers'], vert=False)
 plt.title("Outliers in Subscribers")
 plt.xlabel("Subscribers")
+plt.show()'''
+
+plt.figure(figsize=(10, 4))
+plt.boxplot(subs_crores, vert=False, patch_artist=True)
+plt.title("Outliers in Subscribers (in Crores)")
+plt.xlabel("Subscribers (Crores)")
 plt.show()
 
 #IQR METHOD (Data not normal)
@@ -93,8 +109,7 @@ print("Outliers count (IQR):", len(outliers))
 #Question-1 
 #How has YouTube channel creation evolved over the years among the top 1000 channels?
 df_clean['year'] = df_clean['published_at'].dt.year
-df_clean = df_clean[df_clean['year'] >= 2005]
-yearly_counts = df_clean['year'].value_counts().sort_index()    
+yearly_counts = df_clean[df_clean['year'] >= 2005]['year'].value_counts().sort_index()
 plt.figure()
 sns.lineplot(x=yearly_counts.index, y=yearly_counts.values)
 plt.title("YouTube Top Channel Creation Over the Years")
@@ -103,3 +118,41 @@ plt.ylabel("Number of Channels Created")
 plt.show()
 
 #Question-2
+#Which countries dominate the top 1000 channels by total subscribers?
+
+#Grouping by country
+country_subs = df_country.groupby('country')['subscribers'].sum().sort_values()
+
+#Taking top 10 countries
+top_countries = country_subs.tail(10)/1e7 #Converting to crores for better visualization
+plt.figure()
+plt.barh(top_countries.index, top_countries.values)
+plt.title("Top Countries by Total Subscribers")
+plt.xlabel("Total Subscribers (In Crores)")
+plt.ylabel("Country")
+plt.show()
+
+#Question-3
+#Which content categories dominate the top 1000 channels by total subscribers?
+
+'''#Category Extraction
+df_clean['category'] = df_clean['topic_categories'].str.split('/').str[-1]
+df_clean['category'] = df_clean['category'].str.replace('_', ' ')
+df_clean['category'] = df_clean['category'].str.title()'''
+
+# Improved Category Extraction
+df_clean['category'] = df_clean['topic_categories'].str.split('|').str[0].str.split('/').str[-1]
+df_clean['category'] = df_clean['category'].str.replace('_', ' ').str.title().str.strip()
+
+#Group data
+category_subs = df_clean.groupby('category')['subscribers'].sum().sort_values()
+
+#top 10
+top_categories = category_subs.tail(10)/1e7 #Converting to crores for better visualization
+
+plt.figure()
+plt.barh(top_categories.index, top_categories.values)
+plt.title("Top Categories by Total Subscribers")
+plt.xlabel("Total Subscribers (In Crores)")
+plt.ylabel("Category")
+plt.show()
