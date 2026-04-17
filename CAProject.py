@@ -2,6 +2,10 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error, r2_score
+from scipy import stats
 
 df = pd.read_csv("youtube_top_1000_by_subscribers.csv")
 print(df.info())
@@ -155,4 +159,152 @@ plt.barh(top_categories.index, top_categories.values)
 plt.title("Top Categories by Total Subscribers")
 plt.xlabel("Total Subscribers (In Crores)")
 plt.ylabel("Category")
+plt.show()
+
+#Question-4
+#Predict subscribers based on number of videos
+
+#Independent and dependent variables
+X = df_clean[['videos']].values
+y = df_clean['subscribers'].values
+
+#Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+#Model
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+#Prediction
+y_pred = model.predict(X_test)
+
+#Error
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print("MSE:", mse)
+print("R2 Score:", r2)
+print(f"Intercept:{model.intercept_:.2f}")
+print(f"Coefficient:{model.coef_[0]:.2f}")
+
+#Plot
+plt.scatter(X, y, color='blue', label='Actual Data')
+plt.plot(X, model.predict(X), color='red', linewidth=2, label='Regression Line')
+plt.xlabel("Number of Videos")
+plt.ylabel("Subscribers")
+plt.title("Linear Regression: Videos vs Subscribers")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+#Prediction
+new_value = np.array([[50000]])
+predicted = model.predict(new_value)
+print("Predicted subscribers:", predicted)
+
+#Predict subscribers based on number of views
+#Independent and dependent variables
+X = df_clean[['views']].values
+y = df_clean['subscribers'].values
+
+#Train-test split
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+#Model
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+#Prediction
+y_pred = model.predict(X_test)
+
+#Error
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test, y_pred)
+
+print("MSE:", mse)
+print("R2 Score:", r2)
+print(f"Intercept:{model.intercept_:.2f}")
+print(f"Coefficient:{model.coef_[0]:.2f}")
+
+#Plot
+plt.scatter(X, y, color='blue', label='Actual Data')
+plt.plot(X, model.predict(X), color='red', linewidth=2, label='Regression Line')
+plt.xlabel("Number of Views")
+plt.ylabel("Subscribers")
+plt.title("Linear Regression: Views vs Subscribers")
+plt.legend()
+plt.grid(True)
+plt.show()
+
+#Prediction
+new_value = np.array([[1_000_000_000]])
+predicted = model.predict(new_value)
+print("Predicted subscribers:", predicted)
+
+#Question-5
+#Compare subscribers before and after 2015
+
+#H0 (Null Hypothesis): Mean subscribers of channels created before 2015 
+#                      = Mean subscribers of channels created in/after 2015
+#H1 (Alternative Hypothesis): Mean subscribers of channels created before 2015 
+#                            ≠ Mean subscribers of channels created in/after 2015
+
+from scipy import stats
+
+#Significance level (5%)
+alpha = 0.05
+
+#Creating two groups based on year
+group1 = df_clean[df_clean['year'] < 2015]['subscribers']   #Before 2015
+group2 = df_clean[df_clean['year'] >= 2015]['subscribers']  #2015 and after
+
+#Two-sample independent t-test
+t_stat, p_value = stats.ttest_ind(group1, group2, equal_var=True)
+
+print("Two-sample t-test (Before vs After 2015):")
+print(f"T-statistic = {t_stat:.4f}")
+print(f"P-value = {p_value:.4f}")
+
+#Decision rule
+if p_value < alpha:
+    print("Conclusion: Reject the null hypothesis.")
+else:
+    print("Conclusion: Fail to reject the null hypothesis.")
+
+# Question-6
+# Which are the top 10 YouTube channels based on subscribers, views, and number of videos?
+
+# Top 10 by Subscribers
+top_subs = df_clean.sort_values(by='subscribers', ascending=False).head(10)
+
+plt.figure(figsize=(10,5))
+plt.barh(top_subs['title'], top_subs['subscribers']/1e7)
+plt.gca().invert_yaxis()
+plt.title("Top 10 Channels by Subscribers (in Crores)")
+plt.xlabel("Subscribers (Crores)")
+plt.ylabel("Channel Name")
+plt.show()
+
+
+# Top 10 by Views
+top_views = df_clean.sort_values(by='views', ascending=False).head(10)
+
+plt.figure(figsize=(10,5))
+plt.barh(top_views['title'], top_views['views']/1e9)
+plt.gca().invert_yaxis()
+plt.title("Top 10 Channels by Views (in Billions)")
+plt.xlabel("Views (Billions)")
+plt.ylabel("Channel Name")
+plt.show()
+
+
+# Top 10 by Number of Videos
+top_videos = df_clean.sort_values(by='videos', ascending=False).head(10)
+
+plt.figure(figsize=(10,5))
+plt.barh(top_videos['title'], top_videos['videos'])
+plt.gca().invert_yaxis()
+plt.title("Top 10 Channels by Number of Videos")
+plt.xlabel("Number of Videos")
+plt.ylabel("Channel Name")
 plt.show()
