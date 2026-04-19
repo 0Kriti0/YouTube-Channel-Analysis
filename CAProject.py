@@ -31,14 +31,6 @@ df_clean = df_clean.dropna(subset=['published_at'])
 reference_date = pd.Timestamp('2026-01-01', tz='UTC')
 df_clean['channel_age_years'] = (reference_date - df_clean['published_at']).dt.days / 365.25
 
-#Optional (for efficiency detection)
-df_clean['views_per_video'] = df_clean['views'] / df_clean['videos'].replace(0, np.nan)
-
-##print("Missing published_at:", df_clean['published_at'].isnull().sum())
-##print("Missing age:", df_clean['channel_age_years'].isnull().sum())
-##print("Missing subscribers:", df['subscribers'].isnull().sum())
-##print("Missing views:", df['views'].isnull().sum())
-
 #Drop rows with missing important values
 df_clean = df_clean.dropna(subset=['subscribers', 'views', 'channel_age_years'])
 
@@ -68,11 +60,6 @@ plt.show()
 
 #Outlier Detection
 #HISTOGRAM
-'''plt.figure()
-sns.histplot(df_clean['subscribers'], bins=50, kde=True)
-plt.title("Subscriber Distribution")
-plt.xlabel("Subscribers")
-plt.show()'''
 
 subs_crores = df_clean['subscribers'] / 1e7
 
@@ -82,13 +69,6 @@ plt.title("Subscriber Distribution (in Crores)")
 plt.xlabel("Subscribers (Crores)")
 plt.ylabel("Frequency")
 plt.show()
-
-'''#BOXPLOT
-plt.figure()
-plt.boxplot(df_clean['subscribers'], vert=False)
-plt.title("Outliers in Subscribers")
-plt.xlabel("Subscribers")
-plt.show()'''
 
 plt.figure(figsize=(10, 4))
 plt.boxplot(subs_crores, vert=False, patch_artist=True)
@@ -139,11 +119,6 @@ plt.show()
 #Question-3
 #Which content categories dominate the top 1000 channels by total subscribers?
 
-'''#Category Extraction
-df_clean['category'] = df_clean['topic_categories'].str.split('/').str[-1]
-df_clean['category'] = df_clean['category'].str.replace('_', ' ')
-df_clean['category'] = df_clean['category'].str.title()'''
-
 # Improved Category Extraction
 df_clean['category'] = df_clean['topic_categories'].str.split('|').str[0].str.split('/').str[-1]
 df_clean['category'] = df_clean['category'].str.replace('_', ' ').str.title().str.strip()
@@ -166,7 +141,7 @@ plt.show()
 
 #Independent and dependent variables
 X = df_clean[['videos']].values
-y = df_clean['subscribers'].values
+y = (df_clean['subscribers']/1e7).values
 
 #Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -182,6 +157,7 @@ y_pred = model.predict(X_test)
 mse = mean_squared_error(y_test, y_pred)
 r2 = r2_score(y_test, y_pred)
 
+print("Videos -> Subscribers")
 print("MSE:", mse)
 print("R2 Score:", r2)
 print(f"Intercept:{model.intercept_:.2f}")
@@ -191,7 +167,7 @@ print(f"Coefficient:{model.coef_[0]:.2f}")
 plt.scatter(X, y, color='blue', label='Actual Data')
 plt.plot(X, model.predict(X), color='red', linewidth=2, label='Regression Line')
 plt.xlabel("Number of Videos")
-plt.ylabel("Subscribers")
+plt.ylabel("Subscribers (in Crores)")
 plt.title("Linear Regression: Videos vs Subscribers")
 plt.legend()
 plt.grid(True)
@@ -204,8 +180,8 @@ print("Predicted subscribers:", predicted)
 
 #Predict subscribers based on number of views
 #Independent and dependent variables
-X = df_clean[['views']].values
-y = df_clean['subscribers'].values
+X = (df_clean[['views']]/1e9).values
+y = (df_clean['subscribers']/1e7).values
 
 #Train-test split
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
@@ -229,8 +205,8 @@ print(f"Coefficient:{model.coef_[0]:.2f}")
 #Plot
 plt.scatter(X, y, color='blue', label='Actual Data')
 plt.plot(X, model.predict(X), color='red', linewidth=2, label='Regression Line')
-plt.xlabel("Number of Views")
-plt.ylabel("Subscribers")
+plt.xlabel("Number of Views (In Billions)")
+plt.ylabel("Subscribers (in Crores)")
 plt.title("Linear Regression: Views vs Subscribers")
 plt.legend()
 plt.grid(True)
@@ -248,8 +224,6 @@ print("Predicted subscribers:", predicted)
 #                      = Mean subscribers of channels created in/after 2015
 #H1 (Alternative Hypothesis): Mean subscribers of channels created before 2015 
 #                            ≠ Mean subscribers of channels created in/after 2015
-
-from scipy import stats
 
 #Significance level (5%)
 alpha = 0.05
